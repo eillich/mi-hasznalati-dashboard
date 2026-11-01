@@ -1,0 +1,4 @@
+# A téma kifejezetten beállítva: a bolygós projektben a böngésző sötét témája
+# és a világos ábrasablon ütközött (lásd a döntési naplót).
+[theme]
+base = "light"
