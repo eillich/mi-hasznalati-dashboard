@@ -4,7 +4,7 @@ Streamlit-alkalmazás az Eurostat vállalati mesterségesintelligencia-használa
 
 Készült: PPKE ITK, Mesterséges Intelligencia Alkalmazásai szakirányú továbbképzés, Szkript nyelvek tárgy, a szakdolgozati portfólió részeként.
 
-> **Állapot:** 4. lépés – térkép, grafikonok és táblázat (egyelőre rögzített alapértékekkel: Magyarország és az EU-átlag, a legfrissebb év). A szűrők a következő lépésben készülnek.
+> **Állapot:** 5. lépés – a térkép, a grafikonok és a táblázat a felületről szűrhető.
 
 ## Az adat
 
@@ -48,6 +48,17 @@ Két fül: **Áttekintés** és **Adatminőség**.
 - A megjelenített adatok táblázatban, CSV-letöltéssel.
 
 A térkép országhatárait (Natural Earth, a [`sane-topojson`](https://github.com/etpinard/sane-topojson) csomagból, MIT-licenc) az alkalmazás a saját `static/` mappájából szolgálja ki, így nem függ külső letöltéstől.
+
+## A szűrők (oldalsáv)
+
+A szűrők csak azt választják ki, mi jelenjen meg; az adat nem változik.
+
+- **Mutató:** az MI-használat, a technológiák, a célok, az MI-megoldás forrása vagy a nem-használat egyik oka; mindig a hozzá illő alapra vetítve.
+- **Vállalatméret** (méret szerinti adatkészlet) vagy **ágazat** (ágazati adatkészlet, 50 ágazat).
+- **Év:** csak a mutató felmérési évei (amikor az uniós kérdőívben szerepelt).
+- **Kiemelt ország** (a fő számokban, kék színnel, a térképen körvonallal) és **összevetés** (legfeljebb négy ország vagy átlag, rögzített színsorrendben; az EU-átlag mindig szürke).
+- **Csak EU-tagállamok a térképen**, és a **jelölt értékek** (idősortörés, eltérő definíció) ki-be kapcsolása.
+- A témakörábra a kiválasztott évet követi; ha arra az évre nincs adat a témakörben, a legutóbbi korábbit mutatja, és ezt kiírja.
 
 ## Futtatás
 

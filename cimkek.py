@@ -152,3 +152,16 @@ def agazat(kod: str) -> str:
 
 def egyseg(kod: str) -> str:
     return EGYSEGEK.get(str(kod), str(kod))
+
+
+EU27 = {"AT", "BE", "BG", "CY", "CZ", "DE", "DK", "EE", "EL", "ES", "FI", "FR", "HR", "HU",
+        "IE", "IT", "LT", "LU", "LV", "MT", "NL", "PL", "PT", "RO", "SE", "SI", "SK"}
+
+
+def valaszthato_mutatok() -> dict[str, tuple[str, str]]:
+    """A térképen és az idősoron választható mutatók: kód → (név, a hozzá illő alap)."""
+    valasztek = {FO_MUTATO: (FO_MUTATO_NEV, "PC_ENT")}
+    for tk in TEMAKOROK.values():
+        for kod, nev in tk["mutatok"].items():
+            valasztek[kod] = (nev, tk["egyseg"])
+    return valasztek
