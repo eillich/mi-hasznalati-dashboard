@@ -2,3 +2,7 @@
 # és a világos ábrasablon ütközött (lásd a döntési naplót).
 [theme]
 base = "light"
+
+# A térkép országhatárait (static/*.json) a saját szerver szolgálja ki
+[server]
+enableStaticServing = true

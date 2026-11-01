@@ -4,7 +4,7 @@ Streamlit-alkalmazás az Eurostat vállalati mesterségesintelligencia-használa
 
 Készült: PPKE ITK, Mesterséges Intelligencia Alkalmazásai szakirányú továbbképzés, Szkript nyelvek tárgy, a szakdolgozati portfólió részeként.
 
-> **Állapot:** 3. lépés – rugalmas adatbeolvasás, adatminőség, a hiányos adatok kezelése. A térkép, a grafikonok és a szűrők a következő lépésekben készülnek.
+> **Állapot:** 4. lépés – térkép, grafikonok és táblázat (egyelőre rögzített alapértékekkel: Magyarország és az EU-átlag, a legfrissebb év). A szűrők a következő lépésben készülnek.
 
 ## Az adat
 
@@ -35,6 +35,19 @@ A hibakezelés Python nyelvi elemei, a hivatalos dokumentációhoz mérve: [`dok
 - **Valódi hiány:** a kérdezett mutatók közül a nem közölt értékek (nem megbízható, bizalmas, nem jelentett). A felület országonként és évenként mutatja (hiánytérkép).
 - **Jelölt értékek:** az idősortöréses (`b`) és eltérő definíciójú (`d`) közölt értékek a megjelenítésből kikapcsolhatók; az adat nem változik.
 - A hiányzó érték az ábrákon hézag, soha nem nulla; a táblázatokban „–”.
+
+## A megjelenítés
+
+Két fül: **Áttekintés** és **Adatminőség**.
+
+- Fő számok: Magyarország és az EU-átlag, különbség százalékpontban.
+- Európa-térkép az MI-t használó vállalatok arányáról (egyszínű skála, Magyarország kiemelve).
+- Időbeli alakulás (a hiányzó év hézag, nem nulla).
+- Vállalatméret, illetve ágazat szerinti összevetés (a kkv-k, illetve a jogi és tanácsadási ágazat kiemelve).
+- Témakörök: technológiák, felhasználási célok, az MI-megoldás forrása, a nem-használat okai; mindig a témakörhöz illő alapra vetítve (pl. az okok a bevezetést mérlegelők körében).
+- A megjelenített adatok táblázatban, CSV-letöltéssel.
+
+A térkép országhatárait (Natural Earth, a [`sane-topojson`](https://github.com/etpinard/sane-topojson) csomagból, MIT-licenc) az alkalmazás a saját `static/` mappájából szolgálja ki, így nem függ külső letöltéstől.
 
 ## Futtatás
 
