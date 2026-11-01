@@ -6,8 +6,8 @@ Adatforrás: Eurostat, isoc_eb_ai (vállalatméret szerint) és
 
 Futtatás: python -m streamlit run app.py
 
-Állapot: 4. lépés – térkép, grafikonok és táblázat rögzített alapértékekkel
-(Magyarország és az EU-átlag, a legfrissebb év). A szűrők az 5. lépésben.
+Állapot: 5. lépés – szűrők: mutató, vállalatméret vagy ágazat, év, kiemelt ország,
+összevetés, csak EU-tagállamok a térképen, jelölt értékek.
 """
 
 import pandas as pd
@@ -63,6 +63,9 @@ except ab.AdatHiba as hiba:
     st.error(f"Az adatot nem sikerült betölteni. {hiba}")
     st.stop()
 
+# A szűrők a megjelenítési kapcsoló fölé kerülnek (a tartalmukat lent töltjük ki)
+szurok_panel = st.sidebar.container()
+
 # ── OLDALSÁV: MEGJELENÍTÉS ───────────────────────────────────────────────────
 st.sidebar.header("Megjelenítés")
 jelolt_kozolt_db = int(am.jelolt_kozolt(adat).sum())
@@ -88,14 +91,75 @@ if jelentes.tartalek_okai:
 for figyelmeztetes in jelentes.figyelmeztetesek:
     st.info(figyelmeztetes)
 
-# ── ALAPÉRTÉKEK (az 5. lépésben a felületről állíthatók) ─────────────────────
-ORSZAGOK = ["HU", "EU27_2020"]
-ALAP_MERET, ALAP_AGAZAT = "GE10", "C10-S951_X_K"
+# ── OLDALSÁV: SZŰRŐK ─────────────────────────────────────────────────────────
+# A szűrők csak azt választják ki, mi jelenjen meg; az adat nem változik.
+MUTATOK = cimkek.valaszthato_mutatok()
+TEMAKOR_NEVEK = {k: tk["cim"].split(" (")[0] for k, tk in cimkek.TEMAKOROK.items()}
+
+
+def temakor_neve(kod: str) -> str:
+    for k, tk in cimkek.TEMAKOROK.items():
+        if kod in tk["mutatok"]:
+            return TEMAKOR_NEVEK[k]
+    return "Fő mutató"
+
+
+def ervenyes_allapot(kulcs: str, lehetosegek: list) -> None:
+    """Ha a korábban választott érték már nem választható (pl. másik mutató), elfelejtjük."""
+    if kulcs in st.session_state and st.session_state[kulcs] not in lehetosegek:
+        del st.session_state[kulcs]
+
 
 lathato = adat[am.megjelenitheto(adat, jelolt_is)]
-fo = lathato[(lathato["indic_is"] == cimkek.FO_MUTATO) & (lathato["unit"] == "PC_ENT")]
-fo_alap = fo[(fo["size_emp"] == ALAP_MERET) & (fo["nace_r2"] == ALAP_AGAZAT)]
-ev = int(fo_alap["ev"].max())
+geok = sorted(set(lathato["geo"].astype(str)), key=cimkek.orszag)
+orszag_kodok = [g for g in geok if g not in cimkek.AGGREGATUMOK]
+
+szurok_panel.header("Szűrők")
+mutato = szurok_panel.selectbox(
+    "Mutató (térkép, idősor, fő számok)", list(MUTATOK),
+    format_func=lambda k: MUTATOK[k][0],
+    help="A mutató mindig a hozzá illő alapra vetítve jelenik meg "
+         "(pl. a nem-használat okai a bevezetést mérlegelők körében).")
+mutato_nev, mutato_egyseg = MUTATOK[mutato]
+
+if adatkeszlet == "meret":
+    meret_kodok = [k for k in cimkek.MERETEK if k in set(lathato["size_emp"].astype(str))]
+    meret = szurok_panel.selectbox("Vállalatméret", meret_kodok, index=meret_kodok.index("GE10"),
+                                 format_func=cimkek.MERETEK.get)
+    agazat = "C10-S951_X_K"
+else:
+    meret = "GE10"
+    agazat_kodok = [k for k in cimkek.AGAZATOK if k in set(lathato["nace_r2"].astype(str))]
+    agazat = szurok_panel.selectbox("Ágazat", agazat_kodok, index=agazat_kodok.index("C10-S951_X_K"),
+                                  format_func=cimkek.agazat)
+
+kivalasztott = lathato[(lathato["indic_is"] == mutato) & (lathato["unit"] == mutato_egyseg)
+                       & (lathato["size_emp"] == meret) & (lathato["nace_r2"] == agazat)]
+# Csak a felmérési évek (amikor az uniós kérdőívben szerepelt: van EU-átlag);
+# ha a bontásra nincs EU-átlag (pl. mikrovállalatok), minden év, amelyre van adat
+eu_evek = kivalasztott[kivalasztott["geo"] == "EU27_2020"]["ev"]
+evek = sorted((eu_evek if len(eu_evek) else kivalasztott["ev"]).unique().tolist())
+if not evek:
+    st.warning("Ehhez a mutatóhoz és bontáshoz nincs közölt adat. Válassz másik mutatót "
+               "vagy bontást!")
+    st.stop()
+ervenyes_allapot("ev", evek)
+ev = szurok_panel.select_slider("Év", evek, value=evek[-1], key="ev",
+                              help="Csak azok az évek, amelyekre a mutatóhoz van adat.")
+
+ervenyes_allapot("kiemelt", orszag_kodok)
+kiemelt = szurok_panel.selectbox("Kiemelt ország", orszag_kodok, key="kiemelt",
+                               index=orszag_kodok.index("HU") if "HU" in orszag_kodok else 0,
+                               format_func=cimkek.orszag)
+osszevetheto = [g for g in geok if g != kiemelt]
+alap_osszevetes = ["EU27_2020"] if "EU27_2020" in osszevetheto else osszevetheto[:1]
+osszevetes = szurok_panel.multiselect(
+    "Összevetés", osszevetheto, default=alap_osszevetes, max_selections=4,
+    format_func=cimkek.orszag, help="Legfeljebb négy ország vagy átlag, hogy a színek "
+                                    "megkülönböztethetők maradjanak.")
+ORSZAGOK = [kiemelt] + osszevetes
+csak_eu = szurok_panel.checkbox("Csak EU-tagállamok a térképen", value=False)
+
 megjelenitett: list[pd.DataFrame] = []
 
 
@@ -104,75 +168,93 @@ def ertek(sorok: pd.DataFrame, geo: str, ev_: int) -> float | None:
     return float(x.iloc[0]) if len(x) else None
 
 
+bontas_szoveg = (cimkek.MERETEK[meret].lower() if adatkeszlet == "meret"
+                 else cimkek.agazat(agazat).lower())
 fulek = st.tabs(["Áttekintés", "Adatminőség"])
 
 with fulek[0]:
-    # Fő számok
-    hu, eu = ertek(fo_alap, "HU", ev), ertek(fo_alap, "EU27_2020", ev)
-    elso_ev = int(fo_alap["ev"].min())
-    hu_elso = ertek(fo_alap, "HU", elso_ev)
+    # Fő számok: a kiemelt ország és az első összevetés
+    masik = osszevetes[0] if osszevetes else None
+    k_ertek = ertek(kivalasztott, kiemelt, ev)
+    m_ertek = ertek(kivalasztott, masik, ev) if masik else None
+    elso_ev = evek[0]
+    k_elso = ertek(kivalasztott, kiemelt, elso_ev)
     m1, m2, m3, m4 = st.columns(4)
-    m1.metric(f"Magyarország, {ev}", szazalek(hu) if hu is not None else "–")
-    m2.metric(f"EU-27 átlag, {ev}", szazalek(eu) if eu is not None else "–")
-    m3.metric("Különbség", f"{hu - eu:+.1f}".replace(".", ",") + " százalékpont"
-              if None not in (hu, eu) else "–",
-              help="Magyarország és az EU-átlag különbsége százalékpontban.")
-    m4.metric(f"Magyarország, {elso_ev}", szazalek(hu_elso) if hu_elso is not None else "–",
-              help="Az első felmérési év értéke, összevetésül.")
-    st.caption(f"{cimkek.FO_MUTATO_NEV}, {cimkek.egyseg('PC_ENT')} "
-               f"({cimkek.MERETEK[ALAP_MERET].lower()}, {cimkek.agazat(ALAP_AGAZAT).lower()}).")
+    m1.metric(f"{cimkek.orszag(kiemelt)}, {ev}", szazalek(k_ertek) if k_ertek is not None else "–")
+    m2.metric(f"{cimkek.orszag(masik)}, {ev}" if masik else "Összevetés",
+              szazalek(m_ertek) if m_ertek is not None else "–")
+    m3.metric("Különbség (százalékpont)", f"{k_ertek - m_ertek:+.1f}".replace(".", ",").replace("-", "−")
+              if None not in (k_ertek, m_ertek) else "–",
+              help="A kiemelt ország és az első összevetés különbsége százalékpontban.")
+    m4.metric(f"{cimkek.orszag(kiemelt)}, {elso_ev}", szazalek(k_elso) if k_elso is not None else "–",
+              help="A mutató első elérhető évének értéke, összevetésül.")
+    st.caption(f"{mutato_nev}, {cimkek.egyseg(mutato_egyseg)} ({bontas_szoveg}).")
 
     # Térkép
-    st.subheader(f"MI-t használó vállalatok Európában, {ev}")
-    terkep_sorok = fo_alap[fo_alap["ev"] == ev]
-    st.plotly_chart(abrak.terkep(terkep_sorok, "Arány"), width="stretch",
-                    config=abrak.TERKEP_CONFIG)
-    st.caption("Fekete körvonal: Magyarország. Szürke: nincs közölt adat, vagy nem része a felmérésnek. "
-               "Országhatárok: Natural Earth (sane-topojson).")
-    megjelenitett.append(terkep_sorok)
+    st.subheader(f"{mutato_nev} – Európa, {ev}")
+    terkep_sorok = kivalasztott[kivalasztott["ev"] == ev]
+    if csak_eu:
+        terkep_sorok = terkep_sorok[terkep_sorok["geo"].astype(str).isin(cimkek.EU27)]
+    if terkep_sorok.empty:
+        st.info("Erre az évre nincs megjeleníthető adat.")
+    else:
+        st.plotly_chart(abrak.terkep(terkep_sorok, "Arány", kiemelt), width="stretch",
+                        config=abrak.TERKEP_CONFIG)
+        st.caption(f"Fekete körvonal: {cimkek.orszag(kiemelt)}. Szürke: nincs közölt adat, "
+                   "vagy nem része a felmérésnek (a kiválasztott szűrőkkel). "
+                   "Országhatárok: Natural Earth (sane-topojson).")
+        megjelenitett.append(terkep_sorok)
 
     # Időbeli alakulás
     st.subheader("Időbeli alakulás")
-    idosor_sorok = fo_alap[fo_alap["geo"].astype(str).isin(ORSZAGOK)]
-    st.plotly_chart(abrak.idosor(idosor_sorok, ORSZAGOK, cimkek.egyseg("PC_ENT")),
+    idosor_sorok = kivalasztott[kivalasztott["geo"].astype(str).isin(ORSZAGOK)]
+    st.plotly_chart(abrak.idosor(idosor_sorok, ORSZAGOK, cimkek.egyseg(mutato_egyseg)),
                     width="stretch", config={"displayModeBar": False})
-    st.caption("2022-ben a felmérés nem kérdezett az MI-ről; a vonal ezért 2021-ről 2023-ra ugrik.")
+    st.caption("Csak a mutató felmérési évei szerepelnek (2022-ben nem volt MI-kérdés); "
+               "a hiányzó érték hézag, nem nulla.")
     megjelenitett.append(idosor_sorok)
 
     # Vállalatméret vagy ágazat szerint
     if adatkeszlet == "meret":
         st.subheader(f"Vállalatméret szerint, {ev}")
         meretek = {k: cimkek.MERETEK[k] for k in ["10-49", "50-249", "GE250", "10-249"]}
-        bontas = fo[(fo["nace_r2"] == ALAP_AGAZAT) & (fo["ev"] == ev)
-                    & fo["size_emp"].isin(meretek) & fo["geo"].astype(str).isin(ORSZAGOK)]
-        st.plotly_chart(abrak.csoportositott_savok(bontas, ORSZAGOK, "size_emp", meretek,
-                                                   cimkek.egyseg("PC_ENT"), "10-249",
-                                                   rendezve=False),
-                        width="stretch", config={"displayModeBar": False})
-        st.caption("Minél kisebb a vállalat, annál ritkább az MI-használat; a kkv-k sora félkövér.")
+        bontas = lathato[(lathato["indic_is"] == mutato) & (lathato["unit"] == mutato_egyseg)
+                         & (lathato["nace_r2"] == agazat) & (lathato["ev"] == ev)
+                         & lathato["size_emp"].isin(meretek) & lathato["geo"].astype(str).isin(ORSZAGOK)]
+        kiemelt_kat, rendezve, cimke = "10-249", False, "A kkv-k sora félkövér."
+        kat_oszlop, kategoriak = "size_emp", meretek
     else:
         st.subheader(f"Ágazat szerint, {ev}")
         agazatok = {k: cimkek.agazat(k) for k in cimkek.FO_AGAZATOK}
-        bontas = fo[(fo["size_emp"] == ALAP_MERET) & (fo["ev"] == ev)
-                    & fo["nace_r2"].isin(agazatok) & fo["geo"].astype(str).isin(ORSZAGOK)]
-        st.plotly_chart(abrak.csoportositott_savok(bontas, ORSZAGOK, "nace_r2", agazatok,
-                                                   cimkek.egyseg("PC_ENT"), "M69-M71"),
+        if agazat not in agazatok and agazat != "C10-S951_X_K":
+            agazatok[agazat] = cimkek.agazat(agazat)  # a választott ágazat is látsszon
+        bontas = lathato[(lathato["indic_is"] == mutato) & (lathato["unit"] == mutato_egyseg)
+                         & (lathato["size_emp"] == meret) & (lathato["ev"] == ev)
+                         & lathato["nace_r2"].isin(agazatok) & lathato["geo"].astype(str).isin(ORSZAGOK)]
+        kiemelt_kat = agazat if agazat != "C10-S951_X_K" else "M69-M71"
+        rendezve, cimke = True, f"Félkövér: {cimkek.agazat(kiemelt_kat).lower()}."
+        kat_oszlop, kategoriak = "nace_r2", agazatok
+    if bontas.empty:
+        st.info("Ehhez a választáshoz nincs bontott adat.")
+    else:
+        st.plotly_chart(abrak.csoportositott_savok(bontas, ORSZAGOK, kat_oszlop, kategoriak,
+                                                   cimkek.egyseg(mutato_egyseg), kiemelt_kat,
+                                                   rendezve=rendezve),
                         width="stretch", config={"displayModeBar": False})
-        st.caption("A jogi, számviteli, tanácsadási és mérnöki tevékenység sora félkövér.")
-    megjelenitett.append(bontas)
+        st.caption(f"{mutato_nev}. {cimke}")
+        megjelenitett.append(bontas)
 
     # Témakörök
     st.subheader("Hogyan és miért (nem) használják?")
     temakor = st.radio("Témakör", list(cimkek.TEMAKOROK), horizontal=True,
-                       format_func=lambda k: cimkek.TEMAKOROK[k]["cim"].split(" (")[0],
-                       label_visibility="collapsed")
+                       format_func=TEMAKOR_NEVEK.get, label_visibility="collapsed")
     tk = cimkek.TEMAKOROK[temakor]
     tema = lathato[lathato["indic_is"].isin(tk["mutatok"]) & (lathato["unit"] == tk["egyseg"])
-                   & (lathato["size_emp"] == ALAP_MERET) & (lathato["nace_r2"] == ALAP_AGAZAT)
+                   & (lathato["size_emp"] == meret) & (lathato["nace_r2"] == agazat)
                    & lathato["geo"].astype(str).isin(ORSZAGOK)]
-    tema_evek = sorted(tema["ev"].unique())
+    tema_evek = sorted(e for e in tema["ev"].unique() if e <= ev)
     if not tema_evek:
-        st.info("Ehhez a témakörhöz nincs közölt adat a kiválasztott országokra.")
+        st.info(f"Ehhez a témakörhöz {ev}-ig nincs közölt adat a kiválasztott országokra.")
     else:
         tema_ev = tema_evek[-1]
         tema = tema[tema["ev"] == tema_ev]
@@ -181,8 +263,9 @@ with fulek[0]:
                                                    cimkek.egyseg(tk["egyseg"]),
                                                    "E_AI_BLEG" if temakor == "akadalyok" else None),
                         width="stretch", config={"displayModeBar": False})
-        st.caption(f"Alap: {cimkek.egyseg(tk['egyseg'])}. A legutóbbi év, amelyre a témakörben "
-                   f"van adat ({', '.join(map(str, tema_evek))}); a kérdőív évről évre változik.")
+        megjegyzes = "" if tema_ev == ev else f" A kiválasztott évre ({ev}) nincs adat, ezért a {tema_ev}-es."
+        st.caption(f"Alap: {cimkek.egyseg(tk['egyseg'])}; {bontas_szoveg}.{megjegyzes} "
+                   "A kérdőív évről évre változik, ezért nem minden évben ugyanazok a sorok.")
         megjelenitett.append(tema)
 
     # A megjelenített adatok táblázatban
@@ -311,4 +394,4 @@ with fulek[1]:
 
 
 st.caption("Forrás: Eurostat, Community survey on ICT usage and e-commerce in enterprises "
-           "(isoc_eb_ai, isoc_eb_ain2). A szűrők a következő fejlesztési lépésben készülnek.")
+           "(isoc_eb_ai, isoc_eb_ain2).")
