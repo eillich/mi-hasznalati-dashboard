@@ -4,7 +4,7 @@ Streamlit-alkalmazás az Eurostat vállalati mesterségesintelligencia-használa
 
 Készült: PPKE ITK, Mesterséges Intelligencia Alkalmazásai szakirányú továbbképzés, Szkript nyelvek tárgy, a szakdolgozati portfólió részeként.
 
-> **Állapot:** 2. lépés – rugalmas adatbeolvasás és adatminőség-kijelzés. A térkép, a grafikonok és a szűrők a következő lépésekben készülnek.
+> **Állapot:** 3. lépés – rugalmas adatbeolvasás, adatminőség, a hiányos adatok kezelése. A térkép, a grafikonok és a szűrők a következő lépésekben készülnek.
 
 ## Az adat
 
@@ -28,6 +28,13 @@ Az alkalmazás az adatot nem módosítja előre (nincs Excel- vagy kézi előfel
 4. **Ellenőrzések:** hiányzó dimenziók, évszám-oszlopok, hibás kulcsú és ismétlődő sorok, értelmezhetetlen cellák, 0–100 % közé nem eső százalékok, ismeretlen jelölések, rossz adatkészlet.
 
 A hibakezelés Python nyelvi elemei, a hivatalos dokumentációhoz mérve: [`dokumentacio/python-nyelvi-elemek.md`](dokumentacio/python-nyelvi-elemek.md).
+
+## A hiányos adatok
+
+- **Nem kérdezett:** ha a mutató abban az évben és bontásban nem volt része az uniós kérdőívnek (az EU-átlag nincs közölve), a hiány szerkezeti, nem az országé; az összesítés ezeket kihagyja (`adatminoseg.py`). Ez a cellák kb. harmada.
+- **Valódi hiány:** a kérdezett mutatók közül a nem közölt értékek (nem megbízható, bizalmas, nem jelentett). A felület országonként és évenként mutatja (hiánytérkép).
+- **Jelölt értékek:** az idősortöréses (`b`) és eltérő definíciójú (`d`) közölt értékek a megjelenítésből kikapcsolhatók; az adat nem változik.
+- A hiányzó érték az ábrákon hézag, soha nem nulla; a táblázatokban „–”.
 
 ## Futtatás
 
