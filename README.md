@@ -27,6 +27,8 @@ Az alkalmazás az adatot nem módosítja előre (nincs Excel- vagy kézi előfel
 3. **Cellák:** a számérték és az Eurostat-jelölés szétválasztása (`8.70 u`, `: @C`, tizedesvessző is), a nyers cella megmarad.
 4. **Ellenőrzések:** hiányzó dimenziók, évszám-oszlopok, hibás kulcsú és ismétlődő sorok, értelmezhetetlen cellák, 0–100 % közé nem eső százalékok, ismeretlen jelölések, rossz adatkészlet.
 
+A hibakezelés Python nyelvi elemei, a hivatalos dokumentációhoz mérve: [`dokumentacio/python-nyelvi-elemek.md`](dokumentacio/python-nyelvi-elemek.md).
+
 ## Futtatás
 
 ```

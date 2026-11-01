@@ -312,9 +312,9 @@ def betoltes(adatkeszlet: str, feltoltott: bytes | None = None,
         try:
             tabla = _feldolgozas(beolvaso(), jelentes, adatkeszlet)
         except AdatHiba as hiba:
-            okok.append(f"{leiras}: {hiba}")
-            continue
-        jelentes.tartalek_okai = okok
-        return tabla, jelentes
+            okok.append(f"{leiras}: {hiba}")   # rögzítjük az okot, jöhet a következő forrás
+        else:
+            jelentes.tartalek_okai = okok      # csak akkor fut, ha nem volt hiba
+            return tabla, jelentes
 
     raise AdatHiba("Egyik forrásból sem sikerült betölteni az adatot. " + " | ".join(okok))
