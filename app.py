@@ -67,9 +67,11 @@ if st.sidebar.button("Adatok újratöltése", help="Az adatok legfeljebb egy ór
                      "gyorsítótárból jönnek. A gomb azonnal újra letölti őket "
                      "(pl. ha az élő letöltés nem sikerült)."):
     st.cache_data.clear()
-feltoltes = st.sidebar.file_uploader(
-    "Saját letöltött Eurostat-fájl (nem kötelező)", type=["tsv", "gz", "txt"],
-    help="Az Eurostatról letöltött TSV-fájl, tömörítve (.tsv.gz) vagy kibontva.")
+with st.sidebar.expander("Haladó: saját adatfájl"):
+    st.caption("Ha az Eurostatról saját maga tölt le újabb vagy más adatfájlt (TSV, "
+               "tömörítve vagy kibontva), itt beolvashatja. Hibás fájlnál az alkalmazás "
+               "kiírja a hiba okát, és a következő forrásra vált.")
+    feltoltes = st.file_uploader("Eurostat-fájl feltöltése", type=["tsv", "gz", "txt"])
 
 forras_parameterek = (adatkeszlet, feltoltes.getvalue() if feltoltes else None,
                       feltoltes.name if feltoltes else "", api)
@@ -88,9 +90,10 @@ st.sidebar.header("Megjelenítés")
 jelolt_kozolt_db = minoseg["jelolt_kozolt"]
 jelolt_is = st.sidebar.checkbox(
     "Jelölt értékek az ábrákon", value=True,
-    help="Idősortörés (b) vagy eltérő definíció (d) jelölésű, de közölt értékek. "
-         "Kikapcsolva ezek nem jelennek meg az ábrákon; az adat nem változik.")
-st.sidebar.caption(f"{jelolt_kozolt_db:,} közölt érték jelölt.".replace(",", " "))
+    help="Az Eurostat egyes értékeket megjelöl: idősortörés (módszertani változás, a "
+         "korábbi évekkel nem összevethető) vagy eltérő definíció. Kikapcsolva ezek nem "
+         "jelennek meg az ábrákon; az adat nem változik.")
+jelolt_info = st.sidebar.empty()  # a szűrők után töltjük ki: mit érint a kapcsoló
 
 # ── FEJLÉC ───────────────────────────────────────────────────────────────────
 st.title("MI-használat az európai vállalatoknál")
@@ -146,7 +149,7 @@ if adatkeszlet == "meret":
     agazat = "C10-S951_X_K"
 else:
     meret = "GE10"
-    agazat_kodok = [k for k in cimkek.AGAZATOK if k in set(map(str, lathato["nace_r2"].unique()))]
+    agazat_kodok = cimkek.agazatok_abc_sorrendben(set(map(str, lathato["nace_r2"].unique())))
     agazat = szurok_panel.selectbox("Ágazat", agazat_kodok, index=agazat_kodok.index("C10-S951_X_K"),
                                   format_func=cimkek.agazat)
 
@@ -161,8 +164,12 @@ if not evek:
                "vagy bontást!")
     st.stop()
 ervenyes_allapot("ev", evek)
-ev = szurok_panel.select_slider("Év", evek, value=evek[-1], key="ev",
-                              help="Csak azok az évek, amelyekre a mutatóhoz van adat.")
+# Az év gombsor a főoldalon, a fülek fölött (az oldalsávban négy gomb nem fér el egy sorban)
+ev = st.segmented_control("Év", evek, default=evek[-1], key="ev",
+                          help="Csak azok az évek, amelyekre a kiválasztott mutatóhoz van adat "
+                               "(2022-ben nem volt MI-kérdés).")
+if ev is None:  # a kiválasztott gomb újbóli megnyomása törli a választást
+    ev = evek[-1]
 
 ervenyes_allapot("kiemelt", orszag_kodok)
 kiemelt = szurok_panel.selectbox("Kiemelt ország", orszag_kodok, key="kiemelt",
@@ -175,7 +182,26 @@ osszevetes = szurok_panel.multiselect(
     format_func=cimkek.orszag, help="Legfeljebb négy ország vagy átlag, hogy a színek "
                                     "megkülönböztethetők maradjanak.")
 ORSZAGOK = [kiemelt] + osszevetes
-csak_eu = szurok_panel.checkbox("Csak EU-tagállamok a térképen", value=False)
+csak_eu = szurok_panel.checkbox("Csak az EU-27 a térképen", value=False,
+                                help="Norvégia, Törökország és a tagjelölt országok "
+                                     "(Albánia, Bosznia-Hercegovina, Észak-Macedónia, "
+                                     "Montenegró, Szerbia) nélkül.")
+
+# Mit érint a „Jelölt értékek” kapcsoló az aktuális nézetben (térkép és idősor)?
+nezet = adat[(adat["indic_is"] == mutato) & (adat["unit"] == mutato_egyseg)
+             & (adat["size_emp"] == meret) & (adat["nace_r2"] == agazat)
+             & ((adat["ev"] == ev) | adat["geo"].isin(ORSZAGOK))]
+nezet_jelolt = nezet[am.jelolt_kozolt(nezet)]
+if nezet_jelolt.empty:
+    jelolt_info.caption("Ebben a nézetben nincs jelölt érték, a kapcsoló most nem változtat "
+                        "az ábrákon.")
+else:
+    tetelek = [f"{cimkek.orszag(g)}, {e} ({', '.join(am.ELREJTHETO_JELOLESEK[b] for b in j if b in am.ELREJTHETO_JELOLESEK)})"
+               for g, e, j in nezet_jelolt[["geo", "ev", "jelolesek"]].astype(str).values[:5]]
+    tobb = len(nezet_jelolt) - len(tetelek)
+    jelolt_info.caption("Ebben a nézetben jelölt: " + "; ".join(tetelek)
+                        + (f" és még {tobb}" if tobb > 0 else "") + "."
+                        + ("" if jelolt_is else " Most nem látszanak az ábrákon."))
 
 megjelenitett: list[pd.DataFrame] = []
 
@@ -185,8 +211,8 @@ def ertek(sorok: pd.DataFrame, geo: str, ev_: int) -> float | None:
     return float(x.iloc[0]) if len(x) else None
 
 
-bontas_szoveg = (cimkek.MERETEK[meret].lower() if adatkeszlet == "meret"
-                 else cimkek.agazat(agazat).lower())
+bontas_szoveg = (f"vállalatméret: {cimkek.MERETEK[meret].lower()}" if adatkeszlet == "meret"
+                 else f"ágazat: {cimkek.agazat(agazat).lower()}")
 fulek = st.tabs(["Áttekintés", "Adatminőség"])
 
 with fulek[0]:
@@ -205,7 +231,7 @@ with fulek[0]:
               help="A kiemelt ország és az első összevetés különbsége százalékpontban.")
     m4.metric(f"{cimkek.orszag(kiemelt)}, {elso_ev}", szazalek(k_elso) if k_elso is not None else "–",
               help="A mutató első elérhető évének értéke, összevetésül.")
-    st.caption(f"{mutato_nev}, {cimkek.egyseg(mutato_egyseg)} ({bontas_szoveg}).")
+    st.caption(f"{mutato_nev}, {cimkek.egyseg(mutato_egyseg)}; {bontas_szoveg}.")
 
     # Térkép
     st.subheader(f"{mutato_nev} – Európa, {ev}")
