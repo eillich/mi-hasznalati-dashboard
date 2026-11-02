@@ -53,11 +53,12 @@ A térkép országhatárait (Natural Earth, a [`sane-topojson`](https://github.c
 
 A szűrők csak azt választják ki, mi jelenjen meg; az adat nem változik.
 
-- **Mutató:** az MI-használat, a technológiák, a célok, az MI-megoldás forrása vagy a nem-használat egyik oka; mindig a hozzá illő alapra vetítve.
-- **Vállalatméret** (méret szerinti adatkészlet) vagy **ágazat** (ágazati adatkészlet, 50 ágazat).
-- **Év:** csak a mutató felmérési évei (amikor az uniós kérdőívben szerepelt).
+- **Mutató:** az MI-használat, a bevezetés mérlegelése, a technológiák, a célok, az MI-megoldás forrása, a nem-használat okai, a személyes adatok kezelése és a torzítás-ellenőrzés (az utóbbi kettő csak 2024, 12–13 ország, EU-átlag nélkül); mindig a hozzá illő alapra vetítve. Az Eurostat 63 mutatójából 35; a kimaradtak a felhő- és adatelemzési kombinációk, a digitális intenzitás szerinti bontás és az összesítő mutatók változatai.
+- **Vállalatméret** (méret szerinti adatkészlet) vagy **ágazat** (ágazati adatkészlet, 48 ágazat ábécérendben; az „összes vizsgált ágazat” az Eurostat lehatárolása: mezőgazdaság, bányászat és pénzügyi szektor nélkül).
+- **Év** (gombsor a fülek fölött): csak a mutató felmérési évei (amikor az uniós kérdőívben szerepelt).
 - **Kiemelt ország** (a fő számokban, kék színnel, a térképen körvonallal) és **összevetés** (legfeljebb négy ország vagy átlag, rögzített színsorrendben; az EU-átlag mindig szürke).
-- **Csak EU-tagállamok a térképen**, és a **jelölt értékek** (idősortörés, eltérő definíció) ki-be kapcsolása.
+- **Csak az EU-27 a térképen** (Norvégia, Törökország és a tagjelöltek nélkül), és a **jelölt értékek** (idősortörés, eltérő definíció) ki-be kapcsolása; alatta látszik, mely értékeket érinti az aktuális nézetben.
+- **Haladó: saját adatfájl** (lenyitható): az Eurostatról letöltött fájl beolvasása.
 - A témakörábra a kiválasztott évet követi; ha arra az évre nincs adat a témakörben, a legutóbbi korábbit mutatja, és ezt kiírja.
 
 ## Futtatás

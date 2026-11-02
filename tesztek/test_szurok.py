@@ -28,7 +28,7 @@ def test_alapertekek():
 
 def test_ev_es_orszag_valtasa():
     at = indit()
-    at.sidebar.select_slider[0].set_value(2021).run()
+    at.segmented_control[0].set_value(2021).run()
     at.sidebar.selectbox(key="kiemelt").set_value("AT").run()
     assert not at.exception
     assert "Ausztria, 2021" in szoveg(at)
@@ -38,7 +38,7 @@ def test_mutato_valtasa_csak_letezo_evek():
     at = indit()
     at.sidebar.selectbox[0].set_value("E_AI_BLEG").run()  # 2023-tól kérdezték
     assert not at.exception
-    assert at.sidebar.select_slider[0].options == ["2023", "2024", "2025"]
+    assert list(at.segmented_control[0].options) == ["2023", "2024", "2025"]
     assert "Magyarország, 2025 51,3%" in szoveg(at)
 
 
@@ -54,3 +54,28 @@ def test_agazat_szures():
     at.sidebar.selectbox[1].set_value("M69-M71").run()
     assert not at.exception
     assert "Magyarország, 2025 22,5%" in szoveg(at)
+
+
+def test_jelolt_ertek_tajekoztatas():
+    at = indit()
+    feliratok = " ".join(c.value for c in at.sidebar.caption)
+    assert "Hollandia, 2025 (idősortörés)" in feliratok  # a 2025-ös térképen
+
+
+def test_agazatok_abc_sorrendben_kettozes_nelkul():
+    at = indit()
+    at.sidebar.radio[0].set_value("agazat").run()
+    lista = list(at.sidebar.selectbox[1].options)
+    assert lista[0].startswith("Összes vizsgált ágazat")
+    assert lista.count("Ingatlanügyek") == 1
+    import cimkek
+    assert lista[1:] == sorted(lista[1:], key=cimkek.abc_kulcs)
+
+
+def test_uj_mutatok():
+    at = indit()
+    at.sidebar.selectbox[0].set_value("E_AI_PDI").run()  # csak 2024, EU-átlag nélkül
+    assert not at.exception
+    assert list(at.segmented_control[0].options) == ["2024"]
+    at.sidebar.selectbox[0].set_value("E_AI_EC").run()
+    assert not at.exception

@@ -93,6 +93,14 @@ TEMAKOROK = {
             "E_AI_ADOWN": "Saját munkatársak fejlesztették",
         },
     },
+    "felelos": {
+        "cim": "Személyes adatok és torzítás-ellenőrzés (2024, 12–13 ország, EU-átlag nélkül)",
+        "egyseg": "PC_ENT_AI_TANY",
+        "mutatok": {
+            "E_AI_PDI": "Személyes adatot kezel MI-vel",
+            "E_AI_BIAS": "Ellenőrzi az MI-eredmények esetleges torzítását",
+        },
+    },
     "akadalyok": {
         "cim": "Miért nem vezették be? (a bevezetést mérlegelők körében)",
         "egyseg": "PC_ENT_AI_EC",
@@ -112,11 +120,16 @@ TEMAKOROK = {
 FO_MUTATO = "E_AI_TANY"
 FO_MUTATO_NEV = "Legalább egy MI-technológiát használ"
 
+# Témakörön kívüli, külön választható mutatók: kód → (név, alap)
+KULON_MUTATOK = {
+    "E_AI_EC": ("Mérlegelte az MI bevezetését (az MI-t nem használók körében)", "PC_ENT_AI_TX"),
+}
+
 # A fő ágazatok (az ágazati ábrához); a teljes lista a szűrőkhöz: AGAZATOK
 FO_AGAZATOK = ["C", "D_E", "F", "G", "H", "I", "J", "L", "M", "M69-M71", "N"]
 
 AGAZATOK = {
-    "C10-S951_X_K": "Összes ágazat (pénzügyi szektor nélkül)",
+    "C10-S951_X_K": "Összes vizsgált ágazat (mezőgazdaság, bányászat, pénzügy nélkül)",
     "C-F": "Ipar és építőipar", "C-E": "Ipar (feldolgozóipar, energia, víz)",
     "C": "Feldolgozóipar", "C10-C18": "Élelmiszer-, textil-, fa-, papíripar, nyomdaipar",
     "C10-C12": "Élelmiszer, ital, dohány", "C13-C15": "Textil, ruházat, bőr",
@@ -128,14 +141,14 @@ AGAZATOK = {
     "C27": "Villamos berendezés", "C28": "Gépgyártás", "C29_C30": "Járműgyártás",
     "C31-C33": "Bútor, egyéb feldolgozóipar, javítás",
     "D_E": "Energia-, víz- és hulladékgazdálkodás", "D": "Villamosenergia-, gáz-, gőzellátás",
-    "D35": "Villamosenergia-, gáz-, gőzellátás", "E": "Víz, szennyvíz, hulladékgazdálkodás",
+    "E": "Víz, szennyvíz, hulladékgazdálkodás",
     "F": "Építőipar", "G": "Kereskedelem, gépjárműjavítás", "G45": "Gépjármű-kereskedelem, -javítás",
     "G45-S951_X_K": "Szolgáltatások (pénzügyi szektor nélkül)", "G46": "Nagykereskedelem",
     "G47": "Kiskereskedelem", "H": "Szállítás, raktározás", "I": "Szálláshely, vendéglátás",
     "I55": "Szálláshely-szolgáltatás", "J": "Információ, kommunikáció",
     "J58-J60": "Kiadói, film-, műsorszolgáltatás", "J61": "Távközlés",
     "J62_J63": "Informatikai szolgáltatás", "L_M": "Ingatlanügyek; szakmai, tudományos tevékenység",
-    "L": "Ingatlanügyek", "L68": "Ingatlanügyek",
+    "L": "Ingatlanügyek",
     "M": "Szakmai, tudományos, műszaki tevékenység",
     "M69-M71": "Jogi, számviteli, tanácsadási, mérnöki tevékenység",
     "M72": "Tudományos kutatás-fejlesztés", "M73-M75": "Reklám, piackutatás, egyéb szakmai tevékenység",
@@ -160,8 +173,23 @@ EU27 = {"AT", "BE", "BG", "CY", "CZ", "DE", "DK", "EE", "EL", "ES", "FI", "FR", 
 
 def valaszthato_mutatok() -> dict[str, tuple[str, str]]:
     """A térképen és az idősoron választható mutatók: kód → (név, a hozzá illő alap)."""
-    valasztek = {FO_MUTATO: (FO_MUTATO_NEV, "PC_ENT")}
+    valasztek = {FO_MUTATO: (FO_MUTATO_NEV, "PC_ENT"), **KULON_MUTATOK}
     for tk in TEMAKOROK.values():
         for kod, nev in tk["mutatok"].items():
             valasztek[kod] = (nev, tk["egyseg"])
     return valasztek
+
+
+_EKEZET = str.maketrans("áéíóöőúüűÁÉÍÓÖŐÚÜŰ", "aeiooouuuAEIOOOUUU")
+
+
+def abc_kulcs(szoveg: str) -> tuple:
+    """Magyar ábécérendhez közelítő rendezési kulcs (ékezetes betű az alapbetű után)."""
+    return (szoveg.lower().translate(_EKEZET), szoveg.lower())
+
+
+def agazatok_abc_sorrendben(kodok) -> list[str]:
+    """Az „összes” elöl, a többi ágazat a magyar neve szerint ábécérendben."""
+    kodok = [k for k in kodok if k in AGAZATOK]
+    elol = [k for k in ("C10-S951_X_K",) if k in kodok]
+    return elol + sorted((k for k in kodok if k not in elol), key=lambda k: abc_kulcs(agazat(k)))
