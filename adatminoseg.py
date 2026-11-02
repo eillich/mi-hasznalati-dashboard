@@ -23,13 +23,13 @@ def nem_kerdezett(adat: pd.DataFrame, eu_kod: str = "EU27_2020") -> pd.Series:
     (pl. feltöltött részhalmaz), akkor az számít szerkezetinek, amit
     egyetlen ország sem közölt.
     """
-    kulcs = ["indic_is", "unit", "size_emp", "nace_r2", "ev"]
-    eu = adat[adat["geo"] == eu_kod]
-    alap = eu if len(eu) else adat
-    kerdezett = (alap[alap["ertek"].notna()][kulcs].astype(str)
-                 .drop_duplicates().assign(_kerdezett=True))
-    jelzo = adat[kulcs].astype(str).merge(kerdezett, on=kulcs, how="left")["_kerdezett"]
-    return pd.Series(jelzo.isna().to_numpy(), index=adat.index)
+    kulcs = [adat[k] for k in ["indic_is", "unit", "size_emp", "nace_r2", "ev"]]
+    van_eu = (adat["geo"] == eu_kod).any()
+    kozolt = adat["ertek"].notna() & ((adat["geo"] == eu_kod) if van_eu else True)
+    # Csoportonként (mutató, egység, méret, ágazat, év): van-e közölt alapérték.
+    # A kategória-oszlopokon csoportosítunk, szöveggé alakítás nélkül (gyors).
+    kerdezett = kozolt.groupby(kulcs, observed=True, sort=False).transform("any")
+    return ~kerdezett.astype(bool)
 
 
 def hiany_osszesites(adat: pd.DataFrame, szerint: list[str],
