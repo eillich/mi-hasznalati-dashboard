@@ -29,6 +29,8 @@ Az alkalmazás az adatot nem módosítja előre (nincs Excel- vagy kézi előfel
 
 A hibakezelés Python nyelvi elemei, a hivatalos dokumentációhoz mérve: [`dokumentacio/python-nyelvi-elemek.md`](dokumentacio/python-nyelvi-elemek.md).
 
+Képernyőképek a működő programról: [`dokumentacio/kepernyokepek.md`](dokumentacio/kepernyokepek.md).
+
 ## A hiányos adatok
 
 - **Nem kérdezett:** ha a mutató abban az évben és bontásban nem volt része az uniós kérdőívnek (az EU-átlag nincs közölve), a hiány szerkezeti, nem az országé; az összesítés ezeket kihagyja (`adatminoseg.py`). Ez a cellák kb. harmada.
