@@ -41,6 +41,21 @@ def adat_betoltese(adatkeszlet: str, feltoltott: bytes | None, nev: str, api: bo
     return ab.betoltes(adatkeszlet, feltoltott=feltoltott, feltoltott_nev=nev, api=api)
 
 
+@st.cache_data(ttl=24 * 3600, show_spinner="Az adatminőség összesítése…")
+def minoseg_osszesites(adatkeszlet: str, feltoltott: bytes | None, nev: str, api: bool):
+    """Az adatminőség-összesítések adatkészletenként egyszer készülnek el, nem minden
+    kattintásnál (az ágazati táblában közel egymillió cella van)."""
+    adat, _ = adat_betoltese(adatkeszlet, feltoltott, nev, api)
+    nem_kerdezett = am.nem_kerdezett(adat)
+    return {
+        "nem_kerdezett_arany": float(nem_kerdezett.mean()),
+        "valodi_hiany_arany": float(adat.loc[~nem_kerdezett, "hianyzik"].mean()),
+        "orszagos": am.hiany_osszesites(adat, ["geo"]),
+        "racs": am.hiany_osszesites(adat, ["geo", "ev"]),
+        "jelolt_kozolt": int(am.jelolt_kozolt(adat).sum()),
+    }
+
+
 # ── OLDALSÁV: ADATFORRÁS ─────────────────────────────────────────────────────
 st.sidebar.header("Adatforrás")
 adatkeszlet = st.sidebar.radio("Adatkészlet", list(ADATKESZLET_NEVEK),
@@ -52,23 +67,21 @@ feltoltes = st.sidebar.file_uploader(
     "Saját letöltött Eurostat-fájl (nem kötelező)", type=["tsv", "gz", "txt"],
     help="Az Eurostatról letöltött TSV-fájl, tömörítve (.tsv.gz) vagy kibontva.")
 
+forras_parameterek = (adatkeszlet, feltoltes.getvalue() if feltoltes else None,
+                      feltoltes.name if feltoltes else "", api)
 try:
-    adat, jelentes = adat_betoltese(
-        adatkeszlet,
-        feltoltes.getvalue() if feltoltes else None,
-        feltoltes.name if feltoltes else "",
-        api,
-    )
+    adat, jelentes = adat_betoltese(*forras_parameterek)
 except ab.AdatHiba as hiba:
     st.error(f"Az adatot nem sikerült betölteni. {hiba}")
     st.stop()
+minoseg = minoseg_osszesites(*forras_parameterek)
 
 # A szűrők a megjelenítési kapcsoló fölé kerülnek (a tartalmukat lent töltjük ki)
 szurok_panel = st.sidebar.container()
 
 # ── OLDALSÁV: MEGJELENÍTÉS ───────────────────────────────────────────────────
 st.sidebar.header("Megjelenítés")
-jelolt_kozolt_db = int(am.jelolt_kozolt(adat).sum())
+jelolt_kozolt_db = minoseg["jelolt_kozolt"]
 jelolt_is = st.sidebar.checkbox(
     "Jelölt értékek az ábrákon", value=True,
     help="Idősortörés (b) vagy eltérő definíció (d) jelölésű, de közölt értékek. "
@@ -111,7 +124,7 @@ def ervenyes_allapot(kulcs: str, lehetosegek: list) -> None:
 
 
 lathato = adat[am.megjelenitheto(adat, jelolt_is)]
-geok = sorted(set(lathato["geo"].astype(str)), key=cimkek.orszag)
+geok = sorted(map(str, lathato["geo"].unique()), key=cimkek.orszag)
 orszag_kodok = [g for g in geok if g not in cimkek.AGGREGATUMOK]
 
 szurok_panel.header("Szűrők")
@@ -123,13 +136,13 @@ mutato = szurok_panel.selectbox(
 mutato_nev, mutato_egyseg = MUTATOK[mutato]
 
 if adatkeszlet == "meret":
-    meret_kodok = [k for k in cimkek.MERETEK if k in set(lathato["size_emp"].astype(str))]
+    meret_kodok = [k for k in cimkek.MERETEK if k in set(map(str, lathato["size_emp"].unique()))]
     meret = szurok_panel.selectbox("Vállalatméret", meret_kodok, index=meret_kodok.index("GE10"),
                                  format_func=cimkek.MERETEK.get)
     agazat = "C10-S951_X_K"
 else:
     meret = "GE10"
-    agazat_kodok = [k for k in cimkek.AGAZATOK if k in set(lathato["nace_r2"].astype(str))]
+    agazat_kodok = [k for k in cimkek.AGAZATOK if k in set(map(str, lathato["nace_r2"].unique()))]
     agazat = szurok_panel.selectbox("Ágazat", agazat_kodok, index=agazat_kodok.index("C10-S951_X_K"),
                                   format_func=cimkek.agazat)
 
@@ -164,7 +177,7 @@ megjelenitett: list[pd.DataFrame] = []
 
 
 def ertek(sorok: pd.DataFrame, geo: str, ev_: int) -> float | None:
-    x = sorok[(sorok["geo"].astype(str) == geo) & (sorok["ev"] == ev_)]["ertek"]
+    x = sorok[(sorok["geo"] == geo) & (sorok["ev"] == ev_)]["ertek"]
     return float(x.iloc[0]) if len(x) else None
 
 
@@ -194,7 +207,7 @@ with fulek[0]:
     st.subheader(f"{mutato_nev} – Európa, {ev}")
     terkep_sorok = kivalasztott[kivalasztott["ev"] == ev]
     if csak_eu:
-        terkep_sorok = terkep_sorok[terkep_sorok["geo"].astype(str).isin(cimkek.EU27)]
+        terkep_sorok = terkep_sorok[terkep_sorok["geo"].isin(cimkek.EU27)]
     if terkep_sorok.empty:
         st.info("Erre az évre nincs megjeleníthető adat.")
     else:
@@ -207,7 +220,7 @@ with fulek[0]:
 
     # Időbeli alakulás
     st.subheader("Időbeli alakulás")
-    idosor_sorok = kivalasztott[kivalasztott["geo"].astype(str).isin(ORSZAGOK)]
+    idosor_sorok = kivalasztott[kivalasztott["geo"].isin(ORSZAGOK)]
     st.plotly_chart(abrak.idosor(idosor_sorok, ORSZAGOK, cimkek.egyseg(mutato_egyseg)),
                     width="stretch", config={"displayModeBar": False})
     st.caption("Csak a mutató felmérési évei szerepelnek (2022-ben nem volt MI-kérdés); "
@@ -220,7 +233,7 @@ with fulek[0]:
         meretek = {k: cimkek.MERETEK[k] for k in ["10-49", "50-249", "GE250", "10-249"]}
         bontas = lathato[(lathato["indic_is"] == mutato) & (lathato["unit"] == mutato_egyseg)
                          & (lathato["nace_r2"] == agazat) & (lathato["ev"] == ev)
-                         & lathato["size_emp"].isin(meretek) & lathato["geo"].astype(str).isin(ORSZAGOK)]
+                         & lathato["size_emp"].isin(meretek) & lathato["geo"].isin(ORSZAGOK)]
         kiemelt_kat, rendezve, cimke = "10-249", False, "A kkv-k sora félkövér."
         kat_oszlop, kategoriak = "size_emp", meretek
     else:
@@ -230,7 +243,7 @@ with fulek[0]:
             agazatok[agazat] = cimkek.agazat(agazat)  # a választott ágazat is látsszon
         bontas = lathato[(lathato["indic_is"] == mutato) & (lathato["unit"] == mutato_egyseg)
                          & (lathato["size_emp"] == meret) & (lathato["ev"] == ev)
-                         & lathato["nace_r2"].isin(agazatok) & lathato["geo"].astype(str).isin(ORSZAGOK)]
+                         & lathato["nace_r2"].isin(agazatok) & lathato["geo"].isin(ORSZAGOK)]
         kiemelt_kat = agazat if agazat != "C10-S951_X_K" else "M69-M71"
         rendezve, cimke = True, f"Félkövér: {cimkek.agazat(kiemelt_kat).lower()}."
         kat_oszlop, kategoriak = "nace_r2", agazatok
@@ -251,7 +264,7 @@ with fulek[0]:
     tk = cimkek.TEMAKOROK[temakor]
     tema = lathato[lathato["indic_is"].isin(tk["mutatok"]) & (lathato["unit"] == tk["egyseg"])
                    & (lathato["size_emp"] == meret) & (lathato["nace_r2"] == agazat)
-                   & lathato["geo"].astype(str).isin(ORSZAGOK)]
+                   & lathato["geo"].isin(ORSZAGOK)]
     tema_evek = sorted(e for e in tema["ev"].unique() if e <= ev)
     if not tema_evek:
         st.info(f"Ehhez a témakörhöz {ev}-ig nincs közölt adat a kiválasztott országokra.")
@@ -338,19 +351,17 @@ with fulek[1]:
 
     # ── HIÁNYZÓ ADATOK ───────────────────────────────────────────────────────────
     st.subheader("Hiányzó adatok")
-    nem_kerdezett = am.nem_kerdezett(adat)
-    valodi = adat[~nem_kerdezett]
-    orszagos = am.hiany_osszesites(adat, ["geo"])
+    orszagos = minoseg["orszagos"]
     orszagos = orszagos[~orszagos["geo"].isin(cimkek.AGGREGATUMOK)]
     legtobb = orszagos.loc[orszagos["hiany_szazalek"].idxmax()]
     hu = orszagos.loc[orszagos["geo"] == "HU", "hiany_szazalek"]
 
     h1, h2, h3, h4 = st.columns(4)
-    h1.metric("Nem kérdezett", szazalek(100 * nem_kerdezett.mean()),
+    h1.metric("Nem kérdezett", szazalek(100 * minoseg["nem_kerdezett_arany"]),
               help="A mutató abban az évben (abban a bontásban) nem volt része az uniós "
                    "kérdőívnek: az EU-átlag nincs rá közölve, legfeljebb néhány ország "
                    "gyűjtötte. Ez nem az országok adathiánya, ezért kihagyjuk.")
-    h2.metric("Valódi hiány", szazalek(100 * valodi["hianyzik"].mean()),
+    h2.metric("Valódi hiány", szazalek(100 * minoseg["valodi_hiany_arany"]),
               help="A kérdezett mutatók közül ennyi érték nem közölt "
                    "(nem megbízható, bizalmas vagy nem jelentett).")
     h3.metric("Magyarország", szazalek(hu.iloc[0]) if not hu.empty else "–",
@@ -361,7 +372,7 @@ with fulek[1]:
                "hézagként jelenik meg, soha nem nullaként; a táblázatokban „–” jelöli.")
 
     # Hiánytérkép: ország × év, a valódi hiány aránya
-    racs = am.hiany_osszesites(adat, ["geo", "ev"])
+    racs = minoseg["racs"]
     racs = racs[~racs["geo"].isin(cimkek.AGGREGATUMOK)]
     sorrend = orszagos.sort_values("hiany_szazalek", ascending=False)["geo"].astype(str).tolist()
     evek = sorted(racs["ev"].unique())
