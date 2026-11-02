@@ -29,6 +29,10 @@ Lehetőségek:
 
 Az első indítás 2–5 percig tart (a csomagok telepítése). Ha hibát ír, másold be ide a naplóját (jobb alul *Manage app* → a napló alja).
 
+## Frissítés után
+
+A tárhely `main` ágának minden frissítése után a Streamlit magától frissíti az alkalmazást. Ha ezután `AttributeError` vagy hasonló hiba jelenik meg egy olyan függvényre, amely a kódban megvan, a felhő a régi modult tartja a memóriában: *Manage app* → ⋮ → **Reboot app**. Frissítés után mindig nézd meg az élő változatot is.
+
 ## 3. Kipróbálás (ellenőrzőlista)
 
 Az élő változaton ellenőrizendő, ami a fejlesztői környezetben nem volt kipróbálható:
