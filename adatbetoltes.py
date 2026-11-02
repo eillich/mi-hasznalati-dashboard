@@ -243,20 +243,60 @@ def adatkeszlet_felismerese(adat: pd.DataFrame) -> str | None:
 
 # ── FORRÁSOK ─────────────────────────────────────────────────────────────────
 
-def letoltes_apirol(kod: str, idokorlat: float = 30) -> bytes:
-    """Letölti az adatkészletet az Eurostat API-ról (tömörített TSV)."""
+# Bemutatkozó fejléc: az Európai Bizottság szerverei az azonosítatlan programokat
+# néha elutasítják; így látszik, ki kéri az adatot.
+FEJLECEK = {
+    "User-Agent": "mi-hasznalati-dashboard/1.0 (Streamlit; "
+                  "+https://github.com/eillich/mi-hasznalati-dashboard)",
+    "Accept": "application/gzip, text/tab-separated-values, */*",
+}
+
+
+def hiba_oka(hiba: BaseException) -> str:
+    """A kivételláncból a legmélyebb, beszédes ok, röviden (a felületi üzenethez)."""
+    okok = []
+    jelenlegi: BaseException | None = hiba
+    while jelenlegi is not None and len(okok) < 10:
+        okok.append(jelenlegi)
+        jelenlegi = jelenlegi.__cause__ or jelenlegi.__context__
+    for kivetel in reversed(okok):  # a legmélyebbtől
+        szoveg = str(kivetel).strip()
+        if szoveg:
+            # a "Caused by ..." résznél kezdődő magyarázat a lényeg
+            if "Caused by" in szoveg:
+                szoveg = szoveg.split("Caused by", 1)[1].strip(" ()")
+            return f"{type(kivetel).__name__}: {szoveg[:160]}"
+    return type(hiba).__name__
+
+
+def letoltes_apirol(kod: str, idokorlat: float = 30, probalkozas: int = 2) -> bytes:
+    """Letölti az adatkészletet az Eurostat API-ról (tömörített TSV).
+    Hálózati hiba vagy időtúllépés esetén egyszer újrapróbálja."""
     import requests  # csak itt kell; a tesztek kicserélhetik
 
-    try:
-        valasz = requests.get(API_URL.format(kod=kod), timeout=idokorlat)
-        valasz.raise_for_status()
-    except requests.Timeout as hiba:
-        raise AdatHiba(f"Az Eurostat API nem válaszolt {idokorlat:.0f} másodpercen belül.") from hiba
-    except requests.HTTPError as hiba:
-        raise AdatHiba(f"Az Eurostat API hibát adott vissza (HTTP {hiba.response.status_code}).") from hiba
-    except requests.RequestException as hiba:
-        raise AdatHiba(f"Hálózati hiba az Eurostat API elérésekor ({type(hiba).__name__}).") from hiba
-    return valasz.content
+    for kor in range(1, probalkozas + 1):
+        try:
+            valasz = requests.get(API_URL.format(kod=kod), timeout=idokorlat, headers=FEJLECEK)
+            valasz.raise_for_status()
+        except requests.HTTPError as hiba:
+            raise AdatHiba(f"Az Eurostat API hibát adott vissza "
+                           f"(HTTP {hiba.response.status_code}).") from hiba
+        except requests.Timeout as hiba:
+            if kor < probalkozas:
+                continue
+            raise AdatHiba(f"Az Eurostat API nem válaszolt {idokorlat:.0f} másodpercen belül "
+                           f"({probalkozas} próbálkozás).") from hiba
+        except requests.RequestException as hiba:
+            if kor < probalkozas:
+                continue
+            raise AdatHiba(f"Hálózati hiba az Eurostat API elérésekor "
+                           f"({probalkozas} próbálkozás). Ok: {hiba_oka(hiba)}") from hiba
+        vegso_cim = str(getattr(valasz, "url", ""))
+        if "sorry.ec.europa.eu" in vegso_cim:
+            raise AdatHiba("Az Európai Bizottság szervere túlterhelés-védelmi oldalra irányított "
+                           "át (sorry.ec.europa.eu); a letöltés később újrapróbálható.")
+        return valasz.content
+    raise AdatHiba("Az Eurostat API nem érhető el.")  # ide nem jut el
 
 
 def helyi_fajl(kod: str) -> bytes:

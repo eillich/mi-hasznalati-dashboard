@@ -185,3 +185,30 @@ def test_minden_forras_hibas(monkeypatch, tmp_path):
     monkeypatch.setattr(ab, "ADAT_MAPPA", tmp_path)
     with pytest.raises(ab.AdatHiba, match="Egyik forrásból sem"):
         ab.betoltes("meret", api=False)
+
+
+def test_api_ujraprobal_es_reszletes_ok(monkeypatch):
+    import requests
+    hivasok = []
+
+    def hibas(*a, **k):
+        hivasok.append(k.get("headers", {}))
+        try:
+            raise OSError("Tunnel connection failed: 403 Forbidden")
+        except OSError as belso:
+            raise requests.ConnectionError("Max retries exceeded (Caused by ProxyError('x'))") from belso
+    monkeypatch.setattr(requests, "get", hibas)
+    _, j = ab.betoltes("meret")
+    assert len(hivasok) == 2  # egyszer újrapróbálta
+    assert "mi-hasznalati-dashboard" in hivasok[0]["User-Agent"]
+    assert "Tunnel connection failed: 403" in j.tartalek_okai[0]
+
+
+def test_api_sorry_oldalra_iranyit(monkeypatch):
+    import requests
+
+    class Atiranyitott(_Valasz):
+        url = "https://sorry.ec.europa.eu/"
+    monkeypatch.setattr(requests, "get", lambda *a, **k: Atiranyitott(b"<html></html>"))
+    _, j = ab.betoltes("meret")
+    assert "túlterhelés-védelmi" in j.tartalek_okai[0]

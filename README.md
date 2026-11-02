@@ -4,7 +4,7 @@ Streamlit-alkalmazás az Eurostat vállalati mesterségesintelligencia-használa
 
 Készült: PPKE ITK, Mesterséges Intelligencia Alkalmazásai szakirányú továbbképzés, Szkript nyelvek tárgy, a szakdolgozati portfólió részeként.
 
-> **Állapot:** 6. lépés – közzététel a Streamlit Community Cloudon ([útmutató](dokumentacio/kozzetetel.md)). Az alkalmazás linkje a közzététel után kerül ide.
+> **Az alkalmazás:** https://mi-hasznalati-dashboard.streamlit.app (Streamlit Community Cloud; közzététel: [útmutató](dokumentacio/kozzetetel.md)).
 
 ## Az adat
 
