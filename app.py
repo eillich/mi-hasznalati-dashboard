@@ -35,13 +35,13 @@ def szazalek(x: float, tizedes: int = 1) -> str:
     return f"{x:.{tizedes}f}%".replace(".", ",")
 
 
-@st.cache_data(ttl=24 * 3600, show_spinner="Adatok betöltése…")
+@st.cache_data(ttl=3600, show_spinner="Adatok betöltése…")
 def adat_betoltese(adatkeszlet: str, feltoltott: bytes | None, nev: str, api: bool):
     """Gyorsítótárazott betöltés: nem tölt le újra minden kattintásra."""
     return ab.betoltes(adatkeszlet, feltoltott=feltoltott, feltoltott_nev=nev, api=api)
 
 
-@st.cache_data(ttl=24 * 3600, show_spinner="Az adatminőség összesítése…")
+@st.cache_data(ttl=3600, show_spinner="Az adatminőség összesítése…")
 def minoseg_osszesites(adatkeszlet: str, feltoltott: bytes | None, nev: str, api: bool):
     """Az adatminőség-összesítések adatkészletenként egyszer készülnek el, nem minden
     kattintásnál (az ágazati táblában közel egymillió cella van)."""
@@ -63,6 +63,10 @@ adatkeszlet = st.sidebar.radio("Adatkészlet", list(ADATKESZLET_NEVEK),
 api = st.sidebar.checkbox("Élő letöltés az Eurostat API-ról", value=True,
                           help="Ha nem sikerül, az alkalmazás a tárhelyen lévő "
                                "pillanatképet használja, és kiírja, miért.")
+if st.sidebar.button("Adatok újratöltése", help="Az adatok legfeljebb egy óráig a "
+                     "gyorsítótárból jönnek. A gomb azonnal újra letölti őket "
+                     "(pl. ha az élő letöltés nem sikerült)."):
+    st.cache_data.clear()
 feltoltes = st.sidebar.file_uploader(
     "Saját letöltött Eurostat-fájl (nem kötelező)", type=["tsv", "gz", "txt"],
     help="Az Eurostatról letöltött TSV-fájl, tömörítve (.tsv.gz) vagy kibontva.")
