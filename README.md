@@ -13,9 +13,10 @@ Készült: PPKE ITK, Mesterséges Intelligencia Alkalmazásai szakirányú tová
 | [`isoc_eb_ai`](https://ec.europa.eu/eurostat/databrowser/view/isoc_eb_ai/default/table) | MI-használat vállalatméret szerint | 25 263 idősor, 101 052 adatcella |
 | [`isoc_eb_ain2`](https://ec.europa.eu/eurostat/databrowser/view/isoc_eb_ain2/default/table) | MI-használat ágazat (NACE Rev. 2) szerint | 236 998 idősor, 947 992 adatcella |
 
-- Forrás: Eurostat, Community survey on ICT usage and e-commerce in enterprises; legalább 10 fős vállalkozások, 36 ország és aggregátum, 2021, 2023, 2024, 2025.
+- Forrás: Eurostat, Community survey on ICT usage and e-commerce in enterprises; 36 ország és aggregátum, 2021, 2023, 2024, 2025.
+- Lehatárolás: a feldolgozóipar, az energia- és vízellátás, az építőipar és az üzleti szolgáltatások (NACE C–N, a pénzügyi szektor nélkül, valamint a számítógépjavítás); a mezőgazdaság, a bányászat, a közigazgatás, az oktatás, az egészségügy és a művészet nincs benne. A fő mutatók a legalább 10 fős vállalkozásokra vonatkoznak; a 10 fő alattiakról 6 ország közöl adatot.
 - 63 mutató: MI-technológiák, felhasználási célok, az MI-megoldás forrása, a nem-használat okai (köztük a jogi következmények tisztázatlansága).
-- Az adatok kb. harmada hiányzik (`:`), részben bizalmas (`: @C`); a közölt értékek egy része jelölt (`b` idősortörés, `d` eltérő definíció, `u` kis megbízhatóság).
+- Az adatcellák kb. harmada üres (`:`), részben bizalmas (`: @C`); a közölt értékek egy része jelölt (`b` idősortörés, `d` eltérő definíció), a kis megbízhatóság jele (`u`) csak közöletlen cellán áll.
 - A pillanatkép eredete és ellenőrzőösszegei: [`adat/LETOLTES.md`](adat/LETOLTES.md).
 
 ## A beolvasás
@@ -24,7 +25,7 @@ Az alkalmazás az adatot nem módosítja előre (nincs Excel- vagy kézi előfel
 
 1. **Forrás, sorrendben:** feltöltött fájl (ha van) → élő letöltés az Eurostat API-ról → a tárhelyen lévő pillanatkép. Ha egy forrás nem érhető el vagy hibás, a következőre vált, és a felületen kiírja, miért.
 2. **Formátum:** tömörített vagy sima TSV; UTF-8, szükség esetén latin-1; a HTML-hibaoldalt felismeri.
-3. **Cellák:** a számérték és az Eurostat-jelölés szétválasztása (`8.70 u`, `: @C`, tizedesvessző is), a nyers cella megmarad.
+3. **Cellák:** a számérték és az Eurostat-jelölés szétválasztása (`5.88 b`, `: @C`, tizedesvessző is), a nyers cella megmarad.
 4. **Ellenőrzések:** hiányzó dimenziók, évszám-oszlopok, hibás kulcsú és ismétlődő sorok, értelmezhetetlen cellák, 0–100 % közé nem eső százalékok, ismeretlen jelölések, rossz adatkészlet.
 
 A hibakezelés Python nyelvi elemei, a hivatalos dokumentációhoz mérve: [`dokumentacio/python-nyelvi-elemek.md`](dokumentacio/python-nyelvi-elemek.md).
@@ -58,7 +59,7 @@ A térkép országhatárait (Natural Earth, a [`sane-topojson`](https://github.c
 A szűrők csak azt választják ki, mi jelenjen meg; az adat nem változik.
 
 - **Mutató:** az MI-használat, a bevezetés mérlegelése, a technológiák, a célok, az MI-megoldás forrása, a nem-használat okai, a személyes adatok kezelése és a torzítás-ellenőrzés (az utóbbi kettő csak 2024, 12–13 ország, EU-átlag nélkül); mindig a hozzá illő alapra vetítve. Az Eurostat 63 mutatójából 35; a kimaradtak a felhő- és adatelemzési kombinációk, a digitális intenzitás szerinti bontás és az összesítő mutatók változatai.
-- **Vállalatméret** (méret szerinti adatkészlet) vagy **ágazat** (ágazati adatkészlet, 48 ágazat ábécérendben; az „összes vizsgált ágazat” az Eurostat lehatárolása: mezőgazdaság, bányászat és pénzügyi szektor nélkül).
+- **Vállalatméret** (méret szerinti adatkészlet) vagy **ágazat** (ágazati adatkészlet, 48 ágazat ábécérendben; az „összes vizsgált ágazat” az Eurostat lehatárolása: ipar, építőipar és üzleti szolgáltatások, a pénzügyi szektor nélkül).
 - **Év** (gombsor a fülek fölött): csak a mutató felmérési évei (amikor az uniós kérdőívben szerepelt).
 - **Kiemelt ország** (a fő számokban, kék színnel, a térképen körvonallal) és **összevetés** (legfeljebb négy ország vagy átlag, rögzített színsorrendben; az EU-átlag mindig szürke).
 - **Csak az EU-27 a térképen** (Norvégia, Törökország és a tagjelöltek nélkül), és a **jelölt értékek** (idősortörés, eltérő definíció) ki-be kapcsolása; alatta látszik, mely értékeket érinti az aktuális nézetben.

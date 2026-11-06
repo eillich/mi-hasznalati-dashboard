@@ -120,7 +120,7 @@ def tsv_feldolgozas(szoveg: str, jelentes: BetoltesiJelentes) -> pd.DataFrame:
     Az Eurostat széles TSV-formátumát hosszú táblává alakítja.
 
     Bemenet: első oszlop "freq,size_emp,...,geo\\TIME_PERIOD", majd évenként
-    egy oszlop, a cellákban "érték jelölés" (pl. "8.70 u") vagy ":".
+    egy oszlop, a cellákban "érték jelölés" (pl. "5.88 b") vagy ":".
     Kimenet: soronként egy (dimenziók, év) érték, a nyers cellával együtt.
     """
     try:

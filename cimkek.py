@@ -62,7 +62,7 @@ TEMAKOROK = {
             "E_AI_TSR": "Beszédfelismerés",
             "E_AI_TML": "Gépi tanulás adatelemzésre",
             "E_AI_TPA": "Munkafolyamat-automatizálás, döntéstámogatás",
-            "E_AI_TIR": "Kép- és személyfelismerés",
+            "E_AI_TIR": "Tárgy- és személyfelismerés képek alapján",
             "E_AI_TAR": "Gépek autonóm mozgatása",
         },
     },
@@ -129,7 +129,7 @@ KULON_MUTATOK = {
 FO_AGAZATOK = ["C", "D_E", "F", "G", "H", "I", "J", "L", "M", "M69-M71", "N"]
 
 AGAZATOK = {
-    "C10-S951_X_K": "Összes vizsgált ágazat (mezőgazdaság, bányászat, pénzügy nélkül)",
+    "C10-S951_X_K": "Összes vizsgált ágazat (ipar, építőipar, üzleti szolgáltatások; pénzügy nélkül)",
     "C-F": "Ipar és építőipar", "C-E": "Ipar (feldolgozóipar, energia, víz)",
     "C": "Feldolgozóipar", "C10-C18": "Élelmiszer-, textil-, fa-, papíripar, nyomdaipar",
     "C10-C12": "Élelmiszer, ital, dohány", "C13-C15": "Textil, ruházat, bőr",
@@ -143,7 +143,7 @@ AGAZATOK = {
     "D_E": "Energia-, víz- és hulladékgazdálkodás", "D": "Villamosenergia-, gáz-, gőzellátás",
     "E": "Víz, szennyvíz, hulladékgazdálkodás",
     "F": "Építőipar", "G": "Kereskedelem, gépjárműjavítás", "G45": "Gépjármű-kereskedelem, -javítás",
-    "G45-S951_X_K": "Szolgáltatások (pénzügyi szektor nélkül)", "G46": "Nagykereskedelem",
+    "G45-S951_X_K": "Üzleti szolgáltatások (pénzügy nélkül)", "G46": "Nagykereskedelem",
     "G47": "Kiskereskedelem", "H": "Szállítás, raktározás", "I": "Szálláshely, vendéglátás",
     "I55": "Szálláshely-szolgáltatás", "J": "Információ, kommunikáció",
     "J58-J60": "Kiadói, film-, műsorszolgáltatás", "J61": "Távközlés",
