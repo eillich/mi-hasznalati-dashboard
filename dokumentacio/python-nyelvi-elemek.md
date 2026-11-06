@@ -18,8 +18,8 @@ A feladatkiírás szerint érdemes ellenőrizni az adatbeolvasás hibakezelésé
 
 ## Szándékosan nem használt elemek
 
-- **`except Exception` (mindent elkapó ág):** nem használjuk. A bolygós projekt betöltője így kapott el minden hibát, és ezért senki nem vette észre, hogy az API helyett a helyi fájl töltődött be. Itt csak a várt kivételeket kapjuk el; minden más programhiba látható marad.
-- **`warnings.filterwarnings("ignore")`:** nem használjuk, hogy az elavult paraméterekre figyelmeztető üzenetek ne rejtőzzenek el (szintén a bolygós projekt tanulsága).
+- **`except Exception` (mindent elkapó ág):** nem használjuk, mert elfedné a hibák okát. Itt csak a várt kivételeket kapjuk el; minden más programhiba látható marad.
+- **`warnings.filterwarnings("ignore")`:** nem használjuk, hogy az elavult paraméterekre figyelmeztető üzenetek ne rejtőzzenek el (a bolygós projekt tanulsága).
 - **`finally` (8.7), kivételcsoportok és `except*` (8.9), megjegyzések: `add_note()` (8.10):** a feladatban nincs párhuzamos hibaforrás és kézzel lezárandó erőforrás, ezért nem indokoltak.
 
 ## Hibatűrés a pandas szintjén

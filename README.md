@@ -31,6 +31,8 @@ A hibakezelés Python nyelvi elemei, a hivatalos dokumentációhoz mérve: [`dok
 
 Képernyőképek a működő programról: [`dokumentacio/kepernyokepek.md`](dokumentacio/kepernyokepek.md).
 
+A promptolás érdekes részletei (sikeres és sikertelen utak): [`dokumentacio/naplo_promptolas.md`](dokumentacio/naplo_promptolas.md).
+
 ## A hiányos adatok
 
 - **Nem kérdezett:** ha a mutató abban az évben és bontásban nem volt része az uniós kérdőívnek (az EU-átlag nincs közölve), a hiány szerkezeti, nem az országé; az összesítés ezeket kihagyja (`adatminoseg.py`). Ez a cellák kb. harmada.
