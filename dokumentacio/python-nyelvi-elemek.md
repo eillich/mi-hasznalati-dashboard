@@ -27,10 +27,10 @@ A feladatkiírás szerint érdemes ellenőrizni az adatbeolvasás hibakezelésé
 | Elem | Hol | Mire szolgál |
 | --- | --- | --- |
 | `pd.read_csv(..., dtype=str, keep_default_na=False)` | `tsv_feldolgozas()` | Mindent szövegként olvas be, így semmi nem vész el és nem alakul át csendben; a hiányt a kód maga értelmezi (`:`). |
-| Reguláris kifejezés (`re`, `str.extract`) | `CELLA_MINTA`, `tsv_feldolgozas()` | A szám és az Eurostat-jelölés szétválasztása egy cellán belül (`8.70 u`, `: @C`, tizedesvessző is). |
+| Reguláris kifejezés (`re`, `str.extract`) | `CELLA_MINTA`, `tsv_feldolgozas()` | A szám és az Eurostat-jelölés szétválasztása egy cellán belül (`5.88 b`, `: @C`, tizedesvessző is). |
 | `pd.to_numeric(..., errors="coerce")` | `tsv_feldolgozas()` | Ami nem szám, hiányzó lesz, nem állítja le a programot; a jelentés megszámolja és példákat mutat. |
 | Ellenőrzés `if` + `raise` / figyelmeztetés | `tsv_feldolgozas()` | Hiányzó dimenziók, évszám-oszlopok, hibás kulcsú és ismétlődő sorok, 0–100 közé nem eső százalékok, ismeretlen jelölések. |
 
 ## Ellenőrzés
 
-A hibakezelést 25 automatikus teszt fedi le (`tesztek/test_adatbetoltes.py`), köztük: üres fájl, HTML-hibaoldal, sérült tömörítés, CSV a TSV helyett, hiányzó dimenzió, értelmezhetetlen cella, időtúllépés, HTTP-hiba, rossz adatkészlet, és ha minden forrás hibás.
+A hibakezelést 27 automatikus teszt fedi le (`tesztek/test_adatbetoltes.py`), köztük: üres fájl, HTML-hibaoldal, sérült tömörítés, CSV a TSV helyett, hiányzó dimenzió, értelmezhetetlen cella, időtúllépés, HTTP-hiba, rossz adatkészlet, és ha minden forrás hibás.
